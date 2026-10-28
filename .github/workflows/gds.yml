@@ -1,43 +1,64 @@
- env:
+
+name: Generate GDS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  harden:
+    runs-on: ubuntu-22.04
+
+    env:
       PDK: sky130A
       PDK_ROOT: /home/runner/pdk
       OPENLANE_ROOT: /home/runner/OpenLane
+      OPENLANE_TAG: 2023.07.19-1
 
     steps:
-      - name: Checkout repository
+      - name: Checkout design
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          submodules: recursive
+          python-version: '3.10'
 
-      - name: Build GDS with OpenLane 1
+      - name: Install OpenLane
         run: |
-          set -o pipefail
-          docker pull efabless/openlane:2023.02.14
+          git clone --depth 1 \
+            --branch "$OPENLANE_TAG" \
+            https://github.com/The-OpenROAD-Project/OpenLane.git \
+            "$OPENLANE_ROOT"
 
-          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          cd "$OPENLANE_ROOT"
+          make
 
-          docker run --rm \
-            -v "$GITHUB_WORKSPACE:/work" \
-            -v "$GITHUB_WORKSPACE/pdk:/pdk" \
-            -e PDK_ROOT=/pdk \
-            -e PDK=sky130A \
-            efabless/openlane:2023.02.14 \
-            bash -lc '
-              cd /openlane
-              ./flow.tcl -design /work/openlane/top
-            '
+      - name: Check design files
+        run: |
+          test -f config.json
+          test -f src/A05_array_mult4x4.v
+          test -f constraints/design.sdc
+          python -m json.tool config.json > /dev/null
 
-      - name: Locate GDS output
+      - name: Run RTL to GDS
+        run: |
+          cd "$OPENLANE_ROOT"
+          ./flow.tcl \
+            -design "$GITHUB_WORKSPACE" \
+            -tag github_run
+
+      - name: Find GDS
         if: always()
         run: |
-          find . -type f -name "*.gds" -print
+          find "$GITHUB_WORKSPACE/runs" \
+            -type f -name "*.gds" -print 2>/dev/null || true
 
-      - name: Upload GDS and reports
-        if: success()
+      - name: Upload results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gds-output
-          path: |
-            openlane/top/runs/
-            artifacts/
+          name: A05-array-mult4x4-results
+          path: runs/
           if-no-files-found: warn
