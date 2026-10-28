@@ -19,15 +19,16 @@ jobs:
     steps:
       - name: Checkout design
         uses: actions/checkout@v4
-      - name: Debug repository files
+      - name: Debug and check design files
         run: |
-          echo "Current directory:"
+          echo "=== Repository root ==="
           pwd
+          ls -la
 
-          echo "Repository files:"
-          find . -maxdepth 4 -type f | sort
+          echo "=== Files in repository ==="
+          find . -maxdepth 5 -type f | sort
 
-          echo "Check required files:"
+          echo "=== Required file checks ==="
           for f in config.json src/A05_array_mult4x4.v constraints/design.sdc; do
             if [ -f "$f" ]; then
               echo "FOUND: $f"
@@ -35,6 +36,11 @@ jobs:
               echo "MISSING: $f"
             fi
           done
+
+          echo "=== Check config JSON ==="
+          if [ -f config.json ]; then
+            python -m json.tool config.json
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
