@@ -24,7 +24,7 @@ jobs:
       - name: Compile Verilog
         run: |
           mkdir -p build
-          iverilog -g2012 -o build/sim.out src/A05_array_mult4x4.v tb/A05_tb.v
+          iverilog -g2012 -o build/sim.out src/A05_array_mult4x4.v tb/A05_tb.v src/A05_ref.v
 
       - name: Run simulation
         run: |
