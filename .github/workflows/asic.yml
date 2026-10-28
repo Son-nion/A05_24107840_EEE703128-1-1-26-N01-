@@ -1,12 +1,8 @@
-@ -0,0 +1,79 @@
-
 name: Verilog Simulation
 
-on:
+'on':
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -14,7 +10,6 @@ permissions:
 
 jobs:
   simulation:
-    name: Check Verilog and Generate VCD
     runs-on: ubuntu-latest
 
     steps:
@@ -26,52 +21,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y iverilog
 
-      - name: Check Verilog files
+      - name: Compile Verilog
         run: |
-          iverilog -V
-          find . -type f \( -name "*.v" -o -name "*.sv" \)
-
-      - name: Compile and simulate
-        shell: bash
-        run: |
-          set -euo pipefail
-
           mkdir -p build
+          iverilog -g2012 -o build/sim.out src/top.v tb/top_tb.v
 
-          # THAY hai đường dẫn này bằng đường dẫn file thực tế
-          RTL="src/A05_array_mult4x4.v"
-          TB="tb/A05_tb.v"
-
-          test -f "$RTL" || {
-            echo "ERROR: Cannot find RTL file: $RTL"
-            exit 1
-          }
-
-          test -f "$TB" || {
-            echo "ERROR: Cannot find testbench: $TB"
-            exit 1
-          }
-
-          iverilog -g2012 \
-            -Wall \
-            -s top_tb \
-            -o build/sim.out \
-            "$RTL" "$TB"
-
+      - name: Run simulation
+        run: |
           cd build
           vvp sim.out
+          test -n "$(find . -type f -name '*.vcd' -print -quit)"
 
-          # Bảo đảm mô phỏng đã tạo ít nhất một file VCD
-          find . -type f -name "*.vcd" -print -quit |
-            grep -q . || {
-              echo "ERROR: No VCD file generated"
-              exit 1
-            }
-
-          find . -type f -name "*.vcd" -exec ls -lh {} \;
-
-      - name: Upload VCD artifact
-        if: success()
+      - name: Upload VCD
         uses: actions/upload-artifact@v4
         with:
           name: verilog-waveforms
