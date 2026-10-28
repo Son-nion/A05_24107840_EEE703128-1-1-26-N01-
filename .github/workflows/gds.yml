@@ -1,0 +1,43 @@
+ env:
+      PDK: sky130A
+      PDK_ROOT: /home/runner/pdk
+      OPENLANE_ROOT: /home/runner/OpenLane
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build GDS with OpenLane 1
+        run: |
+          set -o pipefail
+          docker pull efabless/openlane:2023.02.14
+
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/work" \
+            -v "$GITHUB_WORKSPACE/pdk:/pdk" \
+            -e PDK_ROOT=/pdk \
+            -e PDK=sky130A \
+            efabless/openlane:2023.02.14 \
+            bash -lc '
+              cd /openlane
+              ./flow.tcl -design /work/openlane/top
+            '
+
+      - name: Locate GDS output
+        if: always()
+        run: |
+          find . -type f -name "*.gds" -print
+
+      - name: Upload GDS and reports
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gds-output
+          path: |
+            openlane/top/runs/
+            artifacts/
+          if-no-files-found: warn
