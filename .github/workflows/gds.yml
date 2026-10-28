@@ -61,7 +61,7 @@ jobs:
 
       - name: Check design files
         run: |
-          test -f config.json
+          test -f openlane/top/config.json
           test -f src/A05_array_mult4x4.v
           test -f constraints/design.sdc
           python -m json.tool config.json > /dev/null
