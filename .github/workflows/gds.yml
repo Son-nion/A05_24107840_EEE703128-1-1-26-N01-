@@ -38,7 +38,7 @@ jobs:
             exit 1
           }
 
-          python3 -m json.tool config.json >/dev/null
+          python3 -m json.tool openlane/top/config.json >/dev/null
 
           echo "Project files validated."
           echo "Top module: $DESIGN_NAME"
@@ -76,7 +76,7 @@ jobs:
 
           mkdir -p "$DESIGN_DIR"
 
-          cp config.json "$DESIGN_DIR/config.json"
+          cp openlane/top/config.json "$DESIGN_DIR/config.json"
 
           # Copy every RTL file in src, including dependencies.
           cp -a src "$DESIGN_DIR/src"
