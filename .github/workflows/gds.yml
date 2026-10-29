@@ -35,16 +35,28 @@ jobs:
 
           echo "Config and RTL found."
 
-      - name: Install OpenLane 2
+      - name: Install OpenLane 2 dependencies
         shell: bash
         run: |
           set -euo pipefail
 
-          python3 -m pip install --upgrade pip
-          python3 -m pip install openlane
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-tk \
+            python3-pip \
+            python3-venv \
+            tcl \
+            tk
 
-          openlane --version
-          docker --version
+          python3 -m pip install --user --upgrade pip
+          python3 -m pip install --user openlane
+
+          # Verify Tkinter is available
+          python3 -c "import tkinter; print('Tkinter OK')"
+
+          # Verify OpenLane CLI
+          "$HOME/.local/bin/openlane" --version
+
 
       - name: Prepare design directory
         shell: bash
