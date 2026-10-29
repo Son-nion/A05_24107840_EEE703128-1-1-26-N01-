@@ -17,7 +17,7 @@ jobs:
           docker run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /openlane \
-            efabless/openlane:v1.0.2 \
+            efabless/efabless/openlane:superstable \
             ./flow.tcl -design_dir /workspace/openlane/top
 
       - name: Upload GDS Artifact
