@@ -1,7 +1,7 @@
 {
   "DESIGN_NAME": "A05_array_mult4x4",
   "VERILOG_FILES": [
-    "dir::src/A05_array_mult4x4.v"
+      "dir::../../src/A05_array_mult4x4.v",
   ],
   "PNR_SDC_FILE": "dir::constraints/design.sdc",
   "SIGNOFF_SDC_FILE": "dir::constraints/design.sdc",
