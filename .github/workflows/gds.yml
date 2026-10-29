@@ -157,5 +157,8 @@ jobs:
           name: A05-array-mult4x4-debug
           path: |
             openlane/top/runs/
+      - name: Inspect OpenLane CLI options
+        run: |
+          "$HOME/.local/bin/openlane" --help
           if-no-files-found: ignore
           retention-days: 7
