@@ -108,9 +108,9 @@ jobs:
           # OpenLane 2 uses Volare to manage the PDK.
           # The Dockerized CLI runs the flow in its
           # supported tool environment.
-          openlane --dockerized \
-            --pdk-root "$HOME/.volare" \
-            "$GITHUB_WORKSPACE/$DESIGN_DIR/config.json"
+          "$HOME/.local/bin/openlane" --dockerized \
+           --pdk-root "$HOME/.volare" \
+           "$GITHUB_WORKSPACE/$DESIGN_DIR/config.json"
 
       - name: Find and collect GDS
         if: success()
