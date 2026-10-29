@@ -102,15 +102,18 @@ jobs:
 
       - name: Run OpenLane 2 with Sky130A
         shell: bash
+        env:
+          PDK: sky130A
+          PDK_ROOT: /home/runner/.volare
         run: |
           set -euo pipefail
 
-          # OpenLane 2 uses Volare to manage the PDK.
-          # The Dockerized CLI runs the flow in its
-          # supported tool environment.
-          "$HOME/.local/bin/openlane" --dockerized \
-           --pdk-root "$HOME/.volare" \
-           "$GITHUB_WORKSPACE/$DESIGN_DIR/config.json"
+          mkdir -p "$GITHUB_WORKSPACE/runs"
+
+          "$HOME/.local/bin/openlane" \
+            --dockerized \
+            --pdk-root "$PDK_ROOT" \
+            "$GITHUB_WORKSPACE/openlane/top/config.json"
 
       - name: Find and collect GDS
         if: success()
