@@ -1,9 +1,9 @@
-name: OpenLane GDS Flow
+name: OpenLane GDS Build
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch: # Cho phép nhấn nút chạy thủ công từ tab Actions
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Cho phép bấm nút chạy thủ công trên GitHub
 
 jobs:
   build-gds:
@@ -12,16 +12,17 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Run OpenLane Flow
+      - name: Run OpenLane v1.0.2
         run: |
           docker run --rm \
-            -v $(pwd):/openlane \
-            -e PDK_ROOT=/openlane/pdks \
+            -v ${{ github.workspace }}:/workspace \
+            -w /openlane \
             efabless/openlane:v1.0.2 \
-            bash -c "./flow.tcl -design my_design"
+            ./flow.tcl -design_dir /workspace/openlane/top
 
-      - name: Upload GDS File Artifact
+      - name: Upload GDS Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: final-gds-output
-          path: designs/my_design/runs/*/results/final/gds/*.gds
+          name: gds-result
+          path: openlane/top/runs/*/results/final/gds/*.gds
