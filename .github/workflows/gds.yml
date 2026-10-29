@@ -29,7 +29,7 @@ jobs:
           set -euo pipefail
 
           test -f config.json || {
-            echo "::error::config.json not found"
+            echo "::error::openlane/top/config.json not found"
             exit 1
           }
 
