@@ -1,164 +1,27 @@
-
-name: Generate GDS - A05 Array Multiplier 4x4
+name: OpenLane GDS Flow
 
 on:
   push:
-  workflow_dispatch:
-
-permissions:
-  contents: read
+    branches: [ "main" ]
+  workflow_dispatch: # Cho phép nhấn nút chạy thủ công từ tab Actions
 
 jobs:
-  generate-gds:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 360
-
-    env:
-      DESIGN_NAME: A05_array_mult4x4
-      PDK: sky130A
-      DESIGN_DIR: openlane/top
-
+  build-gds:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Validate project
-        shell: bash
+      - name: Run OpenLane Flow
         run: |
-          set -euo pipefail
+          docker run --rm \
+            -v $(pwd):/openlane \
+            -e PDK_ROOT=/openlane/pdks \
+            efabless/openlane:v1.0.2 \
+            bash -c "./flow.tcl -design my_design"
 
-          test -f openlane/top/config.json
-          test -f src/A05_array_mult4x4.v
-
-          python3 -m json.tool \
-            openlane/top/config.json >/dev/null
-
-          echo "Config and RTL found."
-
-      - name: Install OpenLane 2 dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-tk \
-            python3-pip \
-            python3-venv \
-            tcl \
-            tk
-
-          python3 -m pip install --user --upgrade pip
-          python3 -m pip install --user openlane
-
-          # Verify Tkinter is available
-          python3 -c "import tkinter; print('Tkinter OK')"
-
-          # Verify OpenLane CLI
-          "$HOME/.local/bin/openlane" --version
-
-
-      - name: Prepare design directory
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          mkdir -p "$DESIGN_DIR/src"
-
-          # Copy all RTL sources, including possible dependencies.
-          cp src/*.v "$DESIGN_DIR/src/"
-
-          # Keep config.json beside its src directory.
-          test -f "$DESIGN_DIR/config.json"
-          test -f "$DESIGN_DIR/src/A05_array_mult4x4.v"
-
-          # Check whether referenced SDC files exist.
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          config_path = Path("openlane/top/config.json")
-          config = json.loads(config_path.read_text())
-
-          for key in ("PNR_SDC_FILE", "SIGNOFF_SDC_FILE"):
-              value = config.get(key)
-
-              if value and value.startswith("dir::"):
-                  relative = value[len("dir::"):]
-                  target = config_path.parent / relative
-
-                  if not target.is_file():
-                      print(f"SDC not found: {target}")
-                      print(f"Removing {key} from this run's config.")
-                      config.pop(key, None)
-
-          config_path.write_text(
-              json.dumps(config, indent=2) + "\n"
-          )
-          PY
-
-          echo "Prepared design:"
-          find "$DESIGN_DIR" -maxdepth 2 -type f -print
-
-      - name: Run OpenLane 2 with Sky130A
-        shell: bash
-        env:
-          PDK: sky130A
-          PDK_ROOT: /home/runner/.volare
-        run: |
-          set -euo pipefail
-
-          mkdir -p "$GITHUB_WORKSPACE/runs"
-
-          "$HOME/.local/bin/openlane" \
-            --dockerized \
-            --pdk-root "$PDK_ROOT" \
-            "$GITHUB_WORKSPACE/openlane/top/config.json"
-
-      - name: Find and collect GDS
-        if: success()
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          mkdir -p artifacts
-
-          find "$DESIGN_DIR" -type f -name "*.gds" -print
-
-          GDS_FILE=$(
-            find "$DESIGN_DIR" \
-              -type f -path "*/final/gds/*.gds" \
-              -print -quit
-          )
-
-          if [ -z "$GDS_FILE" ]; then
-            echo "::error::No final GDS found."
-            exit 1
-          fi
-
-          cp "$GDS_FILE" \
-            "artifacts/${DESIGN_NAME}.gds"
-
-          ls -lh artifacts/
-
-      - name: Upload GDS artifact
-        if: success()
+      - name: Upload GDS File Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: A05-array-mult4x4-sky130A-GDS
-          path: artifacts/*.gds
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload debug logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: A05-array-mult4x4-debug
-          path: |
-            openlane/top/runs/
-      - name: Inspect OpenLane CLI options
-        run: |
-          "$HOME/.local/bin/openlane" --help
-          if-no-files-found: ignore
-          retention-days: 7
+          name: final-gds-output
+          path: designs/my_design/runs/*/results/final/gds/*.gds
