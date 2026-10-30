@@ -14,10 +14,12 @@ jobs:
 
      - name: Cài OpenLane v1 + PDK
        run: |
-         git clone --depth 1 -b $OL_TAG https://github.com/The-OpenROAD-Project/OpenLane.git $HOME/OpenLane
-         cd $HOME/OpenLane
-         make
-
+        git clone --depth 1 -b $OL_TAG https://github.com/The-OpenROAD-Project/OpenLane.git $HOME/OpenLane
+        cd $HOME/OpenLane
+        echo "cython<3" > /tmp/constraints.txt
+        export PIP_CONSTRAINT=/tmp/constraints.txt
+        make
+        
      - name: Copy thiết kế vào OpenLane
        run: cp -r $DESIGN $HOME/OpenLane/designs/$DESIGN
 
