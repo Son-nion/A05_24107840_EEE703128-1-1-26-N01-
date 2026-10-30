@@ -2,7 +2,7 @@ name: OpenLane GDS
 on: [push, workflow_dispatch]
 
 env:
-  DESIGN: my_design          # tên thư mục thiết kế
+  DESIGN: A05_array_mult4x4.v          # tên thư mục thiết kế
   OL_TAG: 2023.07.19         # tag OpenLane v1 muốn dùng
 
 jobs:
