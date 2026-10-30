@@ -1,28 +1,47 @@
-name: OpenLane GDS Build
+name: OpenLane GDS
+on: [push, workflow_dispatch]
 
-on:
-  push:
-    branches: [ "main", "master" ]
-  workflow_dispatch: # Cho phép bấm nút chạy thủ công trên GitHub
+env:
+  DESIGN: my_design          # tên thư mục thiết kế
+  OL_TAG: 2023.07.19         # tag OpenLane v1 muốn dùng
 
 jobs:
-  build-gds:
-    runs-on: ubuntu-latest
+  gds:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Run OpenLane v1.0.2
+      - name: Cài OpenLane v1 + PDK
         run: |
-          docker run --rm \
-            -v ${{ github.workspace }}:/workspace \
-            -w /openlane \
-            efabless/efabless/openlane:superstable \
-            ./flow.tcl -design_dir /workspace/openlane/top
+          git clone --depth 1 -b $OL_TAG https://github.com/efabless/openlane.git $HOME/OpenLane
+          cd $HOME/OpenLane
+          make          # pull docker image + cài PDK sky130 (volare)
 
-      - name: Upload GDS Artifact
+      - name: Copy thiết kế vào OpenLane
+        run: cp -r $DESIGN $HOME/OpenLane/designs/$DESIGN
+
+      - name: (Tuỳ chọn) Simulate testbench
+        run: |
+          sudo apt-get install -y iverilog
+          iverilog -o sim $DESIGN/src/*.v $DESIGN/tb/*.v && vvp sim
+
+      - name: Chạy flow
+        run: |
+          cd $HOME/OpenLane
+          docker run --rm \
+            -v $PWD:/openlane \
+            -v $PWD/pdks:$PWD/pdks \
+            -e PDK_ROOT=$PWD/pdks -e PDK=sky130A \
+            -u $(id -u):$(id -g) \
+            efabless/openlane:$OL_TAG \
+            sh -c "./flow.tcl -design $DESIGN -tag ci"
+
+      - name: Upload kết quả
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gds-result
-          path: openlane/top/runs/*/results/final/gds/*.gds
+          name: gds-results
+          path: |
+            ~/OpenLane/designs/${{ env.DESIGN }}/runs/ci/results/**
+            ~/OpenLane/designs/${{ env.DESIGN }}/runs/ci/reports/**
