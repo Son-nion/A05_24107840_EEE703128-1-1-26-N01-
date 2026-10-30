@@ -16,8 +16,8 @@ jobs:
        run: |
         git clone --depth 1 -b $OL_TAG https://github.com/The-OpenROAD-Project/OpenLane.git $HOME/OpenLane
         cd $HOME/OpenLane
-        echo "cython<3" > /tmp/constraints.txt
-        export PIP_CONSTRAINT=/tmp/constraints.txt
+        sed -i 's/^pyyaml==5\.4\.1/pyyaml>=6.0/I' requirements.txt
+        grep -ri pyyaml requirements*.txt     # kiểm tra đã sửa đúng
         make
         
      - name: Copy thiết kế vào OpenLane
