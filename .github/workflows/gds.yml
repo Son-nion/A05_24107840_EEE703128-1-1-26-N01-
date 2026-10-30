@@ -10,38 +10,35 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+     - uses: actions/checkout@v4
 
-      - name: Cài OpenLane v1 + PDK
-        run: |
-          git clone --depth 1 -b $OL_TAG https://github.com/efabless/openlane.git $HOME/OpenLane
-          cd $HOME/OpenLane
-          make          # pull docker image + cài PDK sky130 (volare)
+     - name: Cài OpenLane v1 + PDK
+       run: |
+         git clone --depth 1 -b $OL_TAG https://github.com/The-OpenROAD-Project/OpenLane.git $HOME/OpenLane
+         cd $HOME/OpenLane
+         make
 
-      - name: Copy thiết kế vào OpenLane
-        run: cp -r $DESIGN $HOME/OpenLane/designs/$DESIGN
+     - name: Copy thiết kế vào OpenLane
+       run: cp -r $DESIGN $HOME/OpenLane/designs/$DESIGN
 
-      - name: (Tuỳ chọn) Simulate testbench
-        run: |
-          sudo apt-get install -y iverilog
-          iverilog -o sim $DESIGN/src/*.v $DESIGN/tb/*.v && vvp sim
+     - name: Chạy flow
+       run: |
+        cd $HOME/OpenLane
+        IMAGE_TAG=$(python3 ./dependencies/get_tag.py)
+        docker run --rm \
+          -v $PWD:/openlane \
+          -v $PWD/pdks:$PWD/pdks \
+          -e PDK_ROOT=$PWD/pdks -e PDK=sky130A \
+          -u $(id -u):$(id -g) \
+          efabless/openlane:$IMAGE_TAG \
+          sh -c "./flow.tcl -design $DESIGN -tag ci"
+  
 
-      - name: Chạy flow
-        run: |
-          cd $HOME/OpenLane
-          docker run --rm \
-            -v $PWD:/openlane \
-            -v $PWD/pdks:$PWD/pdks \
-            -e PDK_ROOT=$PWD/pdks -e PDK=sky130A \
-            -u $(id -u):$(id -g) \
-            efabless/openlane:$OL_TAG \
-            sh -c "./flow.tcl -design $DESIGN -tag ci"
-
-      - name: Upload kết quả
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gds-results
-          path: |
-            ~/OpenLane/designs/${{ env.DESIGN }}/runs/ci/results/**
-            ~/OpenLane/designs/${{ env.DESIGN }}/runs/ci/reports/**
+     - name: Upload kết quả
+       if: always()
+       uses: actions/upload-artifact@v4
+       with:
+        name: gds-results
+        path: |
+          ~/OpenLane/designs/${{ env.DESIGN }}/runs/ci/results/**
+          ~/OpenLane/designs/${{ env.DESIGN }}/runs/ci/reports/**
